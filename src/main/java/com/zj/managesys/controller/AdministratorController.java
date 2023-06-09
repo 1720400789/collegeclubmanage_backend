@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zj.managesys.common.R;
 import com.zj.managesys.dto.AdminList;
 import com.zj.managesys.entity.Administrator;
+import com.zj.managesys.entity.User;
 import com.zj.managesys.serive.AdministratorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin(origins = "http://localhost:5173", maxAge = 3600, methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.DELETE, RequestMethod.PUT})
+@CrossOrigin
 public class AdministratorController {
 
     @Autowired
@@ -37,7 +38,7 @@ public class AdministratorController {
 //        log.info("登录用户名：{}", administrator.getAccount());
         //1、将页面提交的密码password进行md5解密处理
         String password = administrator.getPassword();
-        if(!"admin".equals(administrator.getAccount()) && !"zj".equals(administrator.getAccount())){
+        if(!"admin".equals(administrator.getAccount()) && !"test".equals(administrator.getAccount())){
             password = DigestUtils.md5DigestAsHex(password.getBytes());
         }
 
@@ -88,6 +89,10 @@ public class AdministratorController {
 
     @PostMapping("/add")
     public R<String> add(@RequestBody Administrator administrator){
+        LambdaQueryWrapper<Administrator> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Administrator::getAccount, administrator.getAccount());
+        Administrator administrator1 = service.getOne(queryWrapper);
+        if(administrator1 != null) return R.error(administrator.getAccount() + " 已存在！");
         administrator.setPassword(DigestUtils.md5DigestAsHex(administrator.getPassword().getBytes()));
         service.save(administrator);
         return R.success("新增管理员成功");

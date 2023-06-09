@@ -1,6 +1,7 @@
 package com.zj.managesys.filter;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.util.IOUtils;
 import com.zj.managesys.common.BaseContext;
 import com.zj.managesys.common.R;
 import com.zj.managesys.common.ResponseWrapper;
@@ -12,6 +13,9 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * 检查用户是否已经完成登录
@@ -37,8 +41,19 @@ public class LoginCheckFilter implements Filter{
         //定义不需要处理的请求路径
         String[] urls = new String[]{
                 "/admin/login",
-                "/admin/logout"
+                "/admin/logout",
+                "/user/login",
+                "/user/register",
+                "/common/*"
         };
+
+//        // 获取请求中的参数名称
+//        Enumeration<String> parameterNames = request.getParameterNames();
+//
+//        // 如果无参数，输出日志
+//        if (!parameterNames.hasMoreElements()) {
+//            log.info("前端请求未携带参数");
+//        }
 
         //2、判断本次请求是否需要处理
         boolean check = check(urls, requestURI);
@@ -59,6 +74,17 @@ public class LoginCheckFilter implements Filter{
             Long admId = (Long) request.getSession().getAttribute("administrator");
             log.info("用户已登录，用户id为：{}",admId != null ? admId : Long.parseLong(token));
             BaseContext.setCurrentId(admId != null ? admId : Long.parseLong(token));
+
+            filterChain.doFilter(request,response);
+            return;
+        }
+
+        String uToken = request.getHeader("uToken");
+        if(request.getSession().getAttribute("user") != null || uToken != null){
+
+            Long admId = (Long) request.getSession().getAttribute("user");
+            log.info("用户已登录，用户id为：{}",admId != null ? admId : Long.parseLong(uToken));
+            BaseContext.setCurrentId(admId != null ? admId : Long.parseLong(uToken));
 
             filterChain.doFilter(request,response);
             return;
