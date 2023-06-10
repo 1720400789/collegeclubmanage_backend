@@ -17,4 +17,6 @@ public class Userforevent implements Serializable {
     private String selfStrength;
 
     private String selfReason;
+
+    private Integer status;
 }

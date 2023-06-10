@@ -41,6 +41,9 @@ public class ClubController {
 
     @Autowired
     private ApplyforjoinService applyforjoinService;
+
+    @Autowired
+    private ApplyforclubService applyforclubService;
     /**
      * 查询所有申请建立社团
      * @param page
@@ -224,16 +227,26 @@ public class ClubController {
         lambdaQueryWrapper.eq(UserClub::getUserId, userid);
         userClubService.page(pageInfo, lambdaQueryWrapper);
 
-        if(!pageInfo.getRecords().isEmpty()){
-            List<UserClub> userClubList = pageInfo.getRecords();
-            List<Long> clubIds = new ArrayList<>();
+        List<UserClub> userClubList = pageInfo.getRecords();
+        List<Long> clubIds = new ArrayList<>();
+        if(!userClubList.isEmpty()){
             for(UserClub item : userClubList){
                 clubIds.add(item.getClubId());
+            }
+        }
+
+        LambdaQueryWrapper<AdminClub> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AdminClub::getAdminId, userid);
+        List<AdminClub> adminClubList = adminClubService.list(wrapper);
+            if(!adminClubList.isEmpty()){
+                for(AdminClub item : adminClubList){
+                    clubIds.add(item.getClubId());
+                }
             }
 
             LambdaQueryWrapper<Club> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
             for(Long item: clubIds){
-                lambdaQueryWrapper1.eq(Club::getId, item.intValue()).or();
+                lambdaQueryWrapper1.eq(Club::getId, item).or();
             }
             clubSerivce.page(page, lambdaQueryWrapper1);
 
@@ -249,9 +262,6 @@ public class ClubController {
                 return dto;
             }).collect(Collectors.toList());
             pageDto.setRecords(list);
-        }else {
-            return R.error("还未加入任何社团");
-        }
 
         return R.success(pageDto.getRecords());
     }
@@ -297,15 +307,27 @@ public class ClubController {
         for(UserClub item : page.getRecords()){
             excludeClubIds.add(item.getClubId());
         }
-
-        //获得没有加入的社团信息
-        LambdaQueryWrapper<Club> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.notIn(Club::getId, excludeClubIds);
-        List<Club> otherClubList = clubSerivce.getBaseMapper().selectList(lambdaQueryWrapper);
+        LambdaQueryWrapper<AdminClub> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AdminClub::getAdminId, id);
+        List<AdminClub> adminClubList = adminClubService.list(wrapper);
+        if(!adminClubList.isEmpty()){
+            for(AdminClub item : adminClubList){
+                excludeClubIds.add(item.getClubId());
+            }
+        }
 
         List<Club_Chairman> list = new ArrayList<>();
+        List<Club> otherClubList = new ArrayList<>();
+        if(excludeClubIds.isEmpty()){
+            otherClubList = clubSerivce.list();
+        }else {
+            //获得没有加入的社团信息
+            LambdaQueryWrapper<Club> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.notIn(Club::getId, excludeClubIds);
+            otherClubList = clubSerivce.getBaseMapper().selectList(lambdaQueryWrapper);
+        }
         if(!otherClubList.isEmpty()){
-                list = otherClubList.stream().map((item) -> {
+            list = otherClubList.stream().map((item) -> {
                 Club_Chairman dto = new Club_Chairman();
                 BeanUtils.copyProperties(item, dto);
                 Administrator administrator = administratorService.getById(item.getChairmanId());
@@ -316,6 +338,7 @@ public class ClubController {
         }else {
             return R.error("你已经全部加过了！");
         }
+
 
         return R.success(list);
     }
@@ -345,6 +368,16 @@ public class ClubController {
         }
 
         applyforjoinService.save(applyforjoin);
+        return R.success("已提交申请");
+    }
+
+    @Transactional
+    @PostMapping("/userapplyclub")
+    public R<String> applyForclub(@RequestBody Applyforclub applyforclub){
+        log.info("信息：{}", applyforclub.toString());
+
+        applyforclubService.save(applyforclub);
+
         return R.success("已提交申请");
     }
 }

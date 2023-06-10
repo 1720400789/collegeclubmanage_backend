@@ -12,6 +12,7 @@ import com.zj.managesys.serive.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class EventController {
         return R.success(pageInfo);
     }
 
+    @Transactional
     @PutMapping("/edit")
     public R<String> edit(@RequestBody ApplyforEvent applyforEvent){
         log.info("信息：{}", applyforEvent.toString());
@@ -104,6 +106,7 @@ public class EventController {
         return R.success("操作成功！");
     }
 
+    @Transactional
     @PostMapping("/add")
     public R<String> addEvent(@RequestBody ApplyforEvent applyforEvent) {
         log.info("信息：{}", applyforEvent.toString());
@@ -143,6 +146,10 @@ public class EventController {
         List<UserEvent> list = userEventService.list(wrapper);
 
         List<ApplyforEvent> eventList = new ArrayList<>();
+        List<Long> eventId = new ArrayList<>();
+        for(UserEvent item : list){
+            eventId.add(item.getEventId());
+        }
         if(list.isEmpty()){
             LambdaQueryWrapper<ApplyforEvent> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(ApplyforEvent::getStatus, new Long(1));
@@ -150,11 +157,12 @@ public class EventController {
         }else{
             LambdaQueryWrapper<ApplyforEvent> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(ApplyforEvent::getStatus, new Long(1));
-            queryWrapper.and(warpper -> {
-                for(UserEvent item: list){
-                    warpper.or((wq -> wq.eq(ApplyforEvent::getId, item.getEventId())));
-                }
-            });
+            queryWrapper.notIn(ApplyforEvent::getId, eventId);
+            //            queryWrapper.and(warpper -> {
+//                for(UserEvent item: list){
+//                    warpper.or((wq -> wq.eq(ApplyforEvent::getId, item.getEventId())));
+//                }
+//            });
             eventList = applyforEventService.list(queryWrapper);
         }
         if(eventList.isEmpty())
@@ -176,6 +184,7 @@ public class EventController {
         return R.success(idenList);
     }
 
+    @Transactional
     @PostMapping("/subApplyForm")
     public R<String> subApplyForm(@RequestBody Userforevent userforevent){
         log.info("信息：{}", userforevent.toString());
@@ -187,5 +196,43 @@ public class EventController {
             return R.error("请勿重复申请！");
         userforeventService.save(userforevent);
         return R.success("申请成功，请耐心等待");
+    }
+
+    @GetMapping("/getMyEvent")
+    public R<List> getMyEvent(Long id){
+        log.info("信息：{}", id);
+
+        LambdaQueryWrapper<UserEvent> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserEvent::getUserId, id);
+        List<UserEvent> list = userEventService.list(wrapper);
+
+        List<ApplyforEvent> eventList = new ArrayList<>();
+        if(list.isEmpty()){
+            return R.error("没有参加过任何活动");
+        }else{
+            LambdaQueryWrapper<ApplyforEvent> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ApplyforEvent::getStatus, new Long(1));
+            queryWrapper.and(warpper -> {
+                for(UserEvent item: list){
+                    warpper.or((wq -> wq.eq(ApplyforEvent::getId, item.getEventId())));
+                }
+            });
+            eventList = applyforEventService.list(queryWrapper);
+        }
+
+        List<Event_Club_User> idenList = eventList.stream().map((item) -> {
+            Event_Club_User dto = new Event_Club_User();
+            BeanUtils.copyProperties(item, dto);
+            Long admId = item.getMemberId();
+            Long clubId = item.getClubId();
+            Administrator administrator = administratorService.getById(admId);
+            Club club = clubSerivce.getById(clubId);
+            dto.setAdmName(administrator.getName());
+            dto.setAdmPhone(administrator.getPhone());
+            dto.setClubName(club.getClubName());
+            return dto;
+        }).collect(Collectors.toList());
+
+        return R.success(idenList);
     }
 }

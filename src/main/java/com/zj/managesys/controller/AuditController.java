@@ -88,12 +88,12 @@ public class AuditController {
 
         //向管理员表中新增管理员
         Administrator adm = administratorService.getById(user.getId());
+
         Administrator administrator = new Administrator();
         if(adm == null){
             administrator.setAccount(user.getMAccount());
-            String password = DigestUtils.md5DigestAsHex(user.getMPassword().getBytes());
             administrator.setId(user.getId());
-            administrator.setPassword(DigestUtils.md5DigestAsHex(password.getBytes()));
+            administrator.setPassword(user.getMPassword());
             administrator.setFlag(new Integer(1));//普通管理员
             administrator.setPhone(user.getMPhone());
             administrator.setName(user.getMName());
@@ -306,7 +306,7 @@ public class AuditController {
 
     @Transactional
     @PostMapping("/checkApply")
-    public R<String> checkApply(int id, int status){
+    public R<String> checkApply(Long id, int status){
         log.info("{}要修改的值：{}", id, status);
 
         Applyforjoin applyforjoin = applyforjoinService.getById(id);
@@ -321,6 +321,10 @@ public class AuditController {
             userClub.setUserId(applyforjoin.getMemberId());
             userClub.setClubId(applyforjoin.getClubId());
             userClubService.save(userClub);
+
+            Club club = clubSerivce.getById(applyforjoin.getClubId());
+            club.setNum(club.getNum() + 1);
+            clubSerivce.updateById(club);
         }
 
         return R.success("审批完成");

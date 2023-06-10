@@ -3,7 +3,7 @@ package com.zj.managesys.entity;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.sql.Date;
+import java.time.LocalDateTime;
 
 @Data
 public class UserEvent implements Serializable {
@@ -12,5 +12,5 @@ public class UserEvent implements Serializable {
 
     private Long eventId;
 
-    private Date joinTime;
+    private LocalDateTime joinTime;
 }
