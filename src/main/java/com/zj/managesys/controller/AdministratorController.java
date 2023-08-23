@@ -6,17 +6,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zj.managesys.common.R;
 import com.zj.managesys.dto.AdminList;
 import com.zj.managesys.entity.Administrator;
-import com.zj.managesys.entity.User;
 import com.zj.managesys.serive.AdministratorService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -76,7 +72,7 @@ public class AdministratorController {
         //条件构造器
         LambdaQueryWrapper<Administrator> queryWrapper = new LambdaQueryWrapper<>();
         //添加过滤条件
-        queryWrapper.like(name != null, Administrator::getName, name);
+        queryWrapper.like(name != null, Administrator::getName, name).or();
         queryWrapper.like(name != null, Administrator::getAccount, name);
         //添加排序条件
         queryWrapper.orderByDesc(Administrator::getCreateTime);

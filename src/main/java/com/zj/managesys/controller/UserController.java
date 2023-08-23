@@ -1,6 +1,7 @@
 package com.zj.managesys.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zj.managesys.common.R;
@@ -8,6 +9,7 @@ import com.zj.managesys.dto.AdminList;
 import com.zj.managesys.entity.Administrator;
 import com.zj.managesys.entity.User;
 import com.zj.managesys.serive.UserService;
+import com.zj.managesys.serive.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
@@ -33,6 +35,7 @@ public class UserController {
             password = DigestUtils.md5DigestAsHex(password.getBytes());
 
         //2、根据页面提交的用户名username查询数据库
+        //下面做sql语句的拼接，select * from user where m_account = ?
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getMAccount,mAccount);
         User adm = userService.getOne(queryWrapper);
@@ -70,7 +73,7 @@ public class UserController {
 
         user.setMPassword(DigestUtils.md5DigestAsHex(user.getMPassword().getBytes()));
 
-        userService.save(user);
+        userService.save(user);//insert操作insert into ... () values （？，？，？）
 
         return R.success("注册成功");
     }
@@ -81,8 +84,8 @@ public class UserController {
         Page<User> pageInfo = new Page<>(page, pageSize);
         //条件构造器
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        //添加过滤条件
-        queryWrapper.like(name != null, User::getMAccount, name);
+        //添加过滤条件select * from user where maccount like ? or mname like ?;
+        queryWrapper.like(name != null, User::getMAccount, name).or();
         queryWrapper.like(name != null, User::getMName, name);
         //添加排序条件
         queryWrapper.orderByDesc(User::getCreateTime);

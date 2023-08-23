@@ -248,7 +248,8 @@ public class ClubController {
             for(Long item: clubIds){
                 lambdaQueryWrapper1.eq(Club::getId, item).or();
             }
-            clubSerivce.page(page, lambdaQueryWrapper1);
+            if(!clubIds.isEmpty())
+                clubSerivce.page(page, lambdaQueryWrapper1);
 
             BeanUtils.copyProperties(page, pageDto, "records");
             List<Club> records = page.getRecords();
